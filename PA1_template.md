@@ -1,0 +1,105 @@
+# Reproducible-Research-Course-Project-1
+Peer-graded Assignment 
+
+
+###Introduction
+
+With reference to the instruction of the Course Project 1, I have completed the my works in the same order as required.
+
+###1. Code for reading in the dataset and/or processing the data
+```{r Read_the_CSV_data}
+# Read the CSV file
+activity <- read.csv("activity.csv")
+```
+
+###2. Historgram of th total number of steps taken each day
+```{r Histogram1}
+# Call the "dplyr" package
+library(dplyr)
+# Group the data based on date and sum the steps in everyday
+actHistData <- activity %>% group_by(date) %>% summarize(steps = sum(steps))
+# Plot the histogram
+with(actHistData, hist(steps, main="Total Number of Steps Taken in Each Day"))
+```
+
+###3. Mean and median number of steps taken each day
+```{r Mean_and_Median}
+# Return the mean value
+mean(actHistData$steps,na.rm = TRUE)
+# Return the median value
+median(actHistData$steps, na.rm = TRUE)
+```
+
+###4. Time series plot of the average number of steps taken
+```{r Time_series}
+# Group the data by intervel and calculate the mean value with removing all "na"
+actTimeSer <- activity %>% group_by(interval) %>% 
+        summarise(steps = mean(steps, na.rm = TRUE))
+# Plot the time serie
+with(actTimeSer, plot(interval, steps, type = "l", 
+                      main = "Average Number of Steps in 5 Min Intervals"))
+```
+
+###5. The 5-minute interval that, on average, contains the max number of steps
+```{r Max_steps}
+# Find the row with maximum steps
+actTimeSer1 <- filter(actTimeSer, steps==max(steps))
+# Return the interval value
+actTimeSer1$interval
+```
+
+###6. Code to describe and show a strategy for imputing missing data
+I firstly checked whether the value of step was "na". If yes, I found the interval of the missing value.  Then, I took the mean value (which was completed in above step) for placing the missing value.  The processing time would be quite long for this step,
+```{r imputing_missing_value}
+# Assign the orginal data with other name "act"
+act <- activity
+# Search every row
+for (i in 1:nrow(act)) {
+# Check whether the step variable was equal to na
+        if (is.na(act[i, 1])==TRUE) {
+                for (j in 1:nrow(actTimeSer)) {
+                        if(actTimeSer[j,1] == act[i,3]){
+# Search the same time interval from the result of above steps
+                                act[i,1] <- actTimeSer[j,2]
+                        }
+                }
+                
+        }
+}
+```
+
+###7. Historam of total no. of steps per date after missing value was imputed.
+```{r New_histogram}
+# Group the data by date and calculate the sum of the steps by date
+actHist <- act %>% group_by(date) %>% summarize(steps = sum(steps))
+# Plot the histogram
+with(actHist, hist(steps, main="Total No of Steps Taken in Each Day"))
+```
+
+###8. Panel plot comparing the ave. no. of steps taking per interval across weekdays  and week ends
+```{r Panel_plot}
+# Change the value of date with the weekdays
+actDate <- mutate(act, date = weekdays(as.Date(date)))
+# Identify the weekday or weekend and change the variable of date
+for (i in 1:nrow(actDate)) {
+        if (actDate[i,2] == "Saturday" | actDate[i,2] == "Sunday") {
+                actDate[i,2] <- "weekend" }
+                else {
+                        actDate[i,2] = "weekday"
+                }
+}
+# Grop the data by interval and by date, calculate the mean value of the steps
+actDateData <- actDate %>% group_by(interval, date) %>% summarise(steps = mean(steps))
+# Set the graph in two rows and one column
+par(mfrow=c(2,1))
+# Plot the first graph showing avarge steps time series in weekdays
+plot(subset(actDateData, date =="weekday")$interval, 
+     subset(actDateData, date =="weekday")$steps, type = "l",
+     xlab="Interval", ylab = "Average Steps", main = "Weekday")
+# Plot the second graph showing average steps time series in weekend   
+plot(subset(actDateData, date =="weekend")$interval, 
+     subset(actDateData, date =="weekend")$steps, type = "l",
+     xlab="Interval", ylab = "Average Steps", main = "Weekend")
+```
+
+All of above R code can reproduced the reproduce the results in this report.
